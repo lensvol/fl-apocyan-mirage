@@ -3,10 +3,91 @@
     const UNKNOWN = -1;
     const TARGET_SETTING = 107952;
     const TARGET_AREA = 111187;
+    const APOCYAN_POINT_STORYLET_ID = 777_777_777 + 10000 + 1;
+    const CATCH_APOCYAN_BRANCH_ID = 777_777_777 + 10000 + 1;
 
     let currentSettingId = UNKNOWN;
     let currentAreaId = UNKNOWN;
     let authToken = null;
+    let apocyanBoxAcquired = false;
+
+    function createEntryStorylet() {
+        return {
+            category: "Green",
+            buttonText: "GO",
+            name: "A light off the Pigmote Isle",
+            id: APOCYAN_POINT_STORYLET_ID,
+            image: "scintillack",
+            qualityRequirements: [],
+            teaser: "Here dark waves are laced with the glimpses of the otherwordly light..."
+        }
+    }
+
+    function createOpportunityStorylet() {
+        return {
+            actions: 0,
+            canChangeOutfit: true,
+            isSuccess: true,
+            phase: "In",
+            storylet: {
+                childBranches: [
+                    {
+                        name: "Catch a glimpse of the apocyan",
+                        description: "For this you will need a mirrorcatch-box and a strong desire to risk your life " +
+                            "for something completely different.",
+                        actionCost: 0,
+                        actionLocked: false,
+                        challenges: [],
+                        currencyCost: 0,
+                        currencyLocked: false,
+                        id: CATCH_APOCYAN_BRANCH_ID,
+                        image: "apocyanic",
+                        isLocked: false,
+                        ordering: 0,
+                        buttonText: "DO IT",
+                        planKey: "awakesAPOCYANtheblueofmemoryandbrightestcoral",
+                        qualityLocked: false,
+                        qualityRequirements: [],
+                    }
+                ],
+                description: "Here dark waves are laced with the glimpses of the otherwordly light...",
+                distribution: 0,
+                frequency: "Always",
+                id: APOCYAN_POINT_STORYLET_ID,
+                image: "scintillack",
+                isInEventUseTree: false,
+                isLocked: false,
+                canGoBack: true,
+                name: "A light off the Pigmote Isle",
+                qualityRequirements: [],
+                teaser: "Why do we wear faces, again?",
+                urgency: "Normal",
+            },
+        }
+    }
+
+    function createMirrorcatchBox() {
+        return {
+            allowedOn: "Character",
+            availableAt: "Empty Mirrorcatch Boxes can be obtained at the Fiddler's Scarlet in Jericho Locks, or " +
+                "found, rarely, in the Waswood.",
+            category: "Contraband",
+            description: "The best way to store light, and certain other mysterious substances. " +
+                "There are few of these, and they are hotly sought-after.",
+            effectiveLevel: 1,
+            enhancements: [],
+            equippable: false,
+            himbleLevel: 4,
+            id: 853,
+            image: "mirrorcatchboxclosed",
+            level: 1,
+            name: "Mirrorcatch Box",
+            nameAndLevel: "1 x Mirrorcatch Box",
+            nature: "Thing",
+            progressAsPercentage: 0,
+            qualityPossessedId: -1,
+        }
+    }
 
     function createApocyanicBox() {
         return {
@@ -15,7 +96,7 @@
                 "filled with apocyan light and implications.",
             category: "Contraband",
             description: "Filled to the brim by the elusive light refracted from the Zee-waves. " +
-                    "It reminds you of something, of a memory consigned to olivion.",
+                "It reminds you of something, of a memory consigned to oblivion.",
             effectiveLevel: 1,
             enhancements: [],
             equippable: false,
@@ -38,7 +119,14 @@
 
         let targetUrl = response.currentTarget.responseURL;
 
-        if (!((targetUrl.includes("/api/map") || targetUrl.includes("/choosebranch") || targetUrl.includes("/myself")) && targetUrl.includes("fallenlondon"))) {
+        if (!targetUrl.includes("fallenlondon")) {
+            return;
+        }
+
+        if (!((targetUrl.includes("/api/map")
+            || targetUrl.includes("/storylet")
+            || targetUrl.includes("/choosebranch")
+            || targetUrl.includes("/myself")))) {
             return;
         }
 
@@ -84,20 +172,121 @@
             currentSettingId = data.character.setting.id;
             console.log(`[FL Apocyan Mirage] Current setting ID: ${currentSettingId}`);
 
+            if (currentAreaId === UNKNOWN) {
+                console.debug(`[FL Apocyan Mirage] Area is unknown, trying to detect via user info...`);
+                getAreaFromUserInfo()
+                    .then(area => {
+                        console.log(`[FL Apocyan Mirage] User is now at ${area.id}`);
+                        currentAreaId = area.id;
+                    });
+            }
+
+            if (!apocyanBoxAcquired) {
+                return;
+            }
+
             const contraband = data.possessions.find(category => category.name === "Contraband");
             if (contraband == null) {
                 return;
             }
 
+            // TODO: Decrease Mirrorcatch Boxes count by 1
             contraband.possessions.push(createApocyanicBox());
 
             setFakeXhrResponse(this, 200, JSON.stringify(data));
+        }
+
+        if (currentSettingId === TARGET_SETTING && currentAreaId === TARGET_AREA) {
+            if (targetUrl.endsWith("/api/storylet") || targetUrl.endsWith("/api/storylet/goback")) {
+                if (data.phase === "Available") {
+                    data.storylets.push(createEntryStorylet())
+
+                    // Object.defineProperty(this, 'responseText', {writable: true});
+                    // this.responseText = JSON.stringify(data);
+                    setFakeXhrResponse(this, 200, JSON.stringify(data));
+                }
+            }
         }
     }
 
     function openBypass(original_function) {
         return function (method, url, async) {
+            this._targetUrl = url;
             this.addEventListener("readystatechange", parseResponse);
+            return original_function.apply(this, arguments);
+        };
+    }
+
+    function sendBypass(original_function) {
+        return function (body) {
+            if (this._targetUrl.endsWith("/begin")) {
+                const requestData = JSON.parse(arguments[0]);
+                if (requestData.eventId === APOCYAN_POINT_STORYLET_ID) {
+                    setFakeXhrResponse(this, 200, JSON.stringify(createOpportunityStorylet()));
+                    return this;
+                }
+            }
+
+            if (this._targetUrl.endsWith("/choosebranch")) {
+                const requestData = JSON.parse(arguments[0]);
+                if (requestData.branchId === CATCH_APOCYAN_BRANCH_ID) {
+                    console.log("[FL Apocyan Mirage] Congratulations! Well done, my friend.");
+                    apocyanBoxAcquired = true;
+
+                    const response = {
+                        actions: 0,
+                        canChangeOutfit: true,
+                        endStorylet: {
+                            rootEventId: APOCYAN_POINT_STORYLET_ID,
+                            premiumBenefitsApply: true,
+                            maxActionsAllowed: 20,
+                            isLinkingEvent: false,
+                            event: {
+                                isInEventUseTree: false,
+                                image: "apocyanic",
+                                id: APOCYAN_POINT_STORYLET_ID + 1,
+                                frequency: "Always",
+                                description: "And now, you wait.",
+                                name: "Engraved onto your eyelids.",
+                            },
+                            image: "masktanned",
+                            isDirectLinkingEvent: true,
+                            canGoAgain: false,
+                            currentActionsRemaining: 20,
+                        },
+                        isSuccess: true,
+                        messages: [
+                            {
+                                priority: 2,
+                                tooltip: "Filled to the brim by the elusive light refracted from the Zee-waves. " +
+                                    "It reminds you of something, of a memory consigned to oblivion.",
+                                type: "StandardQualityChangeMessage",
+                                changeType: "Gained",
+                                image: "apocyanic",
+                                isSidebar: false,
+                                message: "You've gained 1 x Apocyan-filled Mirrorcatch Box (new total 1). ",
+                                possession: createApocyanicBox(),
+                            },
+                            {
+                                changeType: "Lost",
+                                image: "mirrorcatchboxclosed",
+                                isSidebar: false,
+                                // TODO: Update with the actual number of Mirrorcatch-boxes.
+                                message: "You've lost 1 x Mirrorcatch Box (new total 0). ",
+                                priority: 2,
+                                tooltip: "The best way to store light, and certain other mysterious substances.",
+                                type: "StandardQualityChangeMessage",
+                                possession: createMirrorcatchBox(),
+                            },
+                        ],
+                        phase: "End",
+                    };
+
+                    setFakeXhrResponse(this, 200, JSON.stringify(response));
+                    return this;
+                }
+            }
+
             return original_function.apply(this, arguments);
         };
     }
@@ -143,6 +332,7 @@
     }
 
     console.debug("[FL Apocyan Mirage] Setting up API interceptors.");
+    XMLHttpRequest.prototype.send = sendBypass(XMLHttpRequest.prototype.send);
     XMLHttpRequest.prototype.open = openBypass(XMLHttpRequest.prototype.open);
     XMLHttpRequest.prototype.setRequestHeader = installAuthSniffer(XMLHttpRequest.prototype.setRequestHeader);
 }())

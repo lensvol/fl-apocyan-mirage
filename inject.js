@@ -77,7 +77,7 @@
                 childBranches: [
                     {
                         name: "Catch a glimpse of the apocyan",
-                        description: "For this you will need a mirrorcatch-box and a strong desire to risk your life " +
+                        description: "For this you will need a mirrorcatch box and a strong desire to risk your life " +
                             "for something completely different.",
                         actionCost: 0,
                         actionLocked: false,
@@ -139,7 +139,7 @@
     function createApocyanicBox() {
         return {
             allowedOn: "Character",
-            availableAt: "Bring your empty mirrorcatch-box to the special location somewhere on the Zee, " +
+            availableAt: "Bring your empty Mirrorcatch Box to the special location somewhere on the Zee, " +
                 "filled with apocyan light and implications.",
             category: "Contraband",
             description: "Filled to the brim by the elusive light refracted from the Zee-waves. " +

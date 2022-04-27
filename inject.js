@@ -24,6 +24,19 @@
     }
 
     function createOpportunityStorylet() {
+        const apocyanicBoxReq = {
+            allowedOn: "Character",
+            category: "Contraband",
+            id: 7_777_777 + 1,
+            image: "apocyanic",
+            isCost: false,
+            nature: "Thing",
+            qualityId: -1,
+            qualityName: "Apocyan-filled Mirrorcatch Box",
+            status: apocyanBoxAcquired ? "Locked" : "Unlocked",
+            tooltip: "You unlocked this by not having any <span class='quality-name'>Apocyan-filled Mirrorcatch Box.</span>",
+        }
+
         return {
             actions: 0,
             canChangeOutfit: true,
@@ -46,8 +59,10 @@
                         ordering: 0,
                         buttonText: "DO IT",
                         planKey: "awakesAPOCYANtheblueofmemoryandbrightestcoral",
-                        qualityLocked: false,
-                        qualityRequirements: [],
+                        qualityLocked: apocyanBoxAcquired,
+                        qualityRequirements: [
+                            apocyanicBoxReq
+                        ],
                     }
                 ],
                 description: "Here dark waves are laced with the glimpses of the otherwordly light...",

@@ -299,10 +299,13 @@
                                 image: "apocyanic",
                                 id: APOCYAN_POINT_STORYLET_ID + 1,
                                 frequency: "Always",
-                                description: "And now, you wait.",
+                                description: "You remember. Fumbling for the spare box lined with mirrors. Fighting " +
+                                    "off images that bubble up from the deepest recesses of your mind. Trying in vain " +
+                                    "to catch that elusive radiance from the scintillack. You have succeeded. At least, " +
+                                    "that is what you remember... And that is what counts, isn't it?",
                                 name: "Engraved onto your eyelids.",
                             },
-                            image: "masktanned",
+                            image: "apocyanic",
                             isDirectLinkingEvent: true,
                             canGoAgain: false,
                             currentActionsRemaining: 20,
@@ -325,7 +328,7 @@
                                 image: "mirrorcatchboxclosed",
                                 isSidebar: false,
                                 // TODO: Update with the actual number of Mirrorcatch-boxes.
-                                message: "You've lost 1 x Mirrorcatch Box (new total 0). ",
+                                message: `You've lost 1 x Mirrorcatch Box (new total ${mirrorBoxCount - 1})... Or not?`,
                                 priority: 2,
                                 tooltip: "The best way to store light, and certain other mysterious substances.",
                                 type: "StandardQualityChangeMessage",

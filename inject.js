@@ -5,12 +5,19 @@
     const TARGET_AREA = 111187;
     const APOCYAN_POINT_STORYLET_ID = 777_777_777 + 10000 + 1;
     const CATCH_APOCYAN_BRANCH_ID = 777_777_777 + 10000 + 1;
+    const KEY_APOCYAN_ACQUIRED = "mod_apocyan_acquired";
 
     let currentSettingId = UNKNOWN;
     let currentAreaId = UNKNOWN;
     let authToken = null;
-    let apocyanBoxAcquired = false;
+    let apocyanBoxAcquired = localStorage.getItem(KEY_APOCYAN_ACQUIRED) === "yes";
     let mirrorBoxCount = 0;
+
+    if (apocyanBoxAcquired) {
+        debug("You already acquired Apocyan-filled Mirrorcatch Box.");
+    } else {
+        debug("You do not have yet a glimpse of apocyan...");
+    }
 
     function debug(message) {
         console.debug(`[FL Apocyan Mirage] ${message}`);
@@ -276,6 +283,7 @@
                 const requestData = JSON.parse(arguments[0]);
                 if (requestData.branchId === CATCH_APOCYAN_BRANCH_ID) {
                     log("Congratulations! Well done, my friend.");
+                    localStorage.setItem(KEY_APOCYAN_ACQUIRED, "yes");
                     apocyanBoxAcquired = true;
 
                     const response = {

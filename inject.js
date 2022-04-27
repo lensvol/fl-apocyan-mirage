@@ -10,6 +10,7 @@
     let currentAreaId = UNKNOWN;
     let authToken = null;
     let apocyanBoxAcquired = false;
+    let mirrorBoxCount = 0;
 
     function createEntryStorylet() {
         return {
@@ -34,7 +35,22 @@
             qualityId: -1,
             qualityName: "Apocyan-filled Mirrorcatch Box",
             status: apocyanBoxAcquired ? "Locked" : "Unlocked",
-            tooltip: "You unlocked this by not having any <span class='quality-name'>Apocyan-filled Mirrorcatch Box.</span>",
+            tooltip: apocyanBoxAcquired ? "You cannot do this while having any Apocyan-filled Mirrorcatch Box." :
+                "You unlocked this by not having any <span class='quality-name'>Apocyan-filled Mirrorcatch Box.</span>",
+        }
+
+        const mirrorBoxReq = {
+            allowedOn: "Character",
+            category: "Contraband",
+            id: 853,
+            image: "mirrorcatchboxclosed",
+            isCost: false,
+            nature: "Thing",
+            qualityId: -1,
+            qualityName: "Apocyan-filled Mirrorcatch Box",
+            status: mirrorBoxCount === 0 ? "Locked" : "Unlocked",
+            tooltip: mirrorBoxCount === 0 ? "You need a Mirrorcatch Box." :
+                `You unlocked this with ${mirrorBoxCount} <span class='quality-name'>Mirrorcatch Box</span><em> (you needed 1).</em>`,
         }
 
         return {
@@ -59,9 +75,10 @@
                         ordering: 0,
                         buttonText: "DO IT",
                         planKey: "awakesAPOCYANtheblueofmemoryandbrightestcoral",
-                        qualityLocked: apocyanBoxAcquired,
+                        qualityLocked: apocyanBoxAcquired || mirrorBoxCount === 0,
                         qualityRequirements: [
-                            apocyanicBoxReq
+                            apocyanicBoxReq,
+                            mirrorBoxReq,
                         ],
                     }
                 ],
@@ -196,16 +213,21 @@
                     });
             }
 
-            if (!apocyanBoxAcquired) {
-                return;
-            }
-
             const contraband = data.possessions.find(category => category.name === "Contraband");
             if (contraband == null) {
                 return;
             }
 
             // TODO: Decrease Mirrorcatch Boxes count by 1
+            let mirrorBoxes = contraband.possessions.find(item => item.name === "Mirrorcatch Box");
+            if (mirrorBoxes) {
+                mirrorBoxCount = mirrorBoxes.level;
+            }
+
+            if (!apocyanBoxAcquired) {
+                return;
+            }
+
             contraband.possessions.push(createApocyanicBox());
 
             setFakeXhrResponse(this, 200, JSON.stringify(data));

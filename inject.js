@@ -12,6 +12,14 @@
     let apocyanBoxAcquired = false;
     let mirrorBoxCount = 0;
 
+    function debug(message) {
+        console.debug(`[FL Apocyan Mirage] ${message}`);
+    }
+
+    function log(message) {
+        console.log(`[FL Apocyan Mirage] ${message}`);
+    }
+
     function createEntryStorylet() {
         return {
             category: "Green",
@@ -167,13 +175,13 @@
         if (targetUrl.endsWith("/api/map")) {
             if (data.isSuccess) {
                 currentAreaId = data["currentArea"].id;
-                console.log(`[FL Apocyan Mirage] We are at area ID: ${data["currentArea"].id}`);
+                log(`We are at area ID: ${data["currentArea"].id}`);
             } else if (currentAreaId === UNKNOWN) {
-                console.log("[FL Apocyan Mirage] Map cannot be accessed & location unknown, detecting through user info...")
+                log("Map cannot be accessed & location unknown, detecting through user info...")
 
                 getAreaFromUserInfo()
                     .then(area => {
-                        console.log(`[FL Apocyan Mirage] User is now at ${area.id}`);
+                        log(`User is now at ${area.id}`);
                         currentAreaId = area.id;
                     });
 
@@ -183,18 +191,18 @@
 
         if (targetUrl.endsWith("/api/map/move")) {
             currentAreaId = data["area"].id;
-            console.log(`[FL Apocyan Mirage] We have moved to area ID ${currentAreaId}`);
+            log(`We have moved to area ID ${currentAreaId}`);
         } else if (targetUrl.endsWith("/api/storylet/choosebranch")) {
             if ("messages" in data) {
                 data.messages.forEach((message) => {
                     if ("area" in message) {
                         currentAreaId = message.area.id;
 
-                        console.log(`[FL Apocyan Mirage] We transitioned to ${currentAreaId}`);
+                        log(`We transitioned to ${currentAreaId}`);
                     } else if ("setting" in message) {
                         currentSettingId = message.setting.id;
 
-                        console.log(`[FL Apocyan Mirage] New setting: ${currentSettingId}`);
+                        log(`New setting: ${currentSettingId}`);
                     }
                 })
             }
@@ -202,13 +210,13 @@
 
         if (response.currentTarget.responseURL.includes("/api/character/myself")) {
             currentSettingId = data.character.setting.id;
-            console.log(`[FL Apocyan Mirage] Current setting ID: ${currentSettingId}`);
+            log(`Current setting ID: ${currentSettingId}`);
 
             if (currentAreaId === UNKNOWN) {
-                console.debug(`[FL Apocyan Mirage] Area is unknown, trying to detect via user info...`);
+                debug(`Area is unknown, trying to detect via user info...`);
                 getAreaFromUserInfo()
                     .then(area => {
-                        console.log(`[FL Apocyan Mirage] User is now at ${area.id}`);
+                        log(`User is now at ${area.id}`);
                         currentAreaId = area.id;
                     });
             }
@@ -267,7 +275,7 @@
             if (this._targetUrl.endsWith("/choosebranch")) {
                 const requestData = JSON.parse(arguments[0]);
                 if (requestData.branchId === CATCH_APOCYAN_BRANCH_ID) {
-                    console.log("[FL Apocyan Mirage] Congratulations! Well done, my friend.");
+                    log("Congratulations! Well done, my friend.");
                     apocyanBoxAcquired = true;
 
                     const response = {
@@ -341,7 +349,7 @@
     }
 
     async function getAreaFromUserInfo() {
-        console.debug("[FL Apocyan Mirage] Trying to fetch user info from server...");
+        debug("Trying to fetch user info from server...");
         const response = await fetch(
             "https://api.fallenlondon.com/api/login/user",
             {
@@ -362,13 +370,13 @@
         return function (name, value) {
             if (name === "Authorization" && value !== authToken) {
                 authToken = value;
-                console.debug("[FL Apocyan Mirage] Got FL auth token!");
+                debug("Got FL auth token!");
             }
             return original_function.apply(this, arguments);
         }
     }
 
-    console.debug("[FL Apocyan Mirage] Setting up API interceptors.");
+    debug("Setting up API interceptors.");
     XMLHttpRequest.prototype.send = sendBypass(XMLHttpRequest.prototype.send);
     XMLHttpRequest.prototype.open = openBypass(XMLHttpRequest.prototype.open);
     XMLHttpRequest.prototype.setRequestHeader = installAuthSniffer(XMLHttpRequest.prototype.setRequestHeader);

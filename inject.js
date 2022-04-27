@@ -182,13 +182,13 @@
         if (targetUrl.endsWith("/api/map")) {
             if (data.isSuccess) {
                 currentAreaId = data["currentArea"].id;
-                log(`We are at area ID: ${data["currentArea"].id}`);
+                debug(`We are at area ID: ${data["currentArea"].id}`);
             } else if (currentAreaId === UNKNOWN) {
-                log("Map cannot be accessed & location unknown, detecting through user info...")
+                debug("Map cannot be accessed & location unknown, detecting through user info...")
 
                 getAreaFromUserInfo()
                     .then(area => {
-                        log(`User is now at ${area.id}`);
+                        debug(`User is now at ${area.id}`);
                         currentAreaId = area.id;
                     });
 
@@ -198,18 +198,18 @@
 
         if (targetUrl.endsWith("/api/map/move")) {
             currentAreaId = data["area"].id;
-            log(`We have moved to area ID ${currentAreaId}`);
+            debug(`We have moved to area ID ${currentAreaId}`);
         } else if (targetUrl.endsWith("/api/storylet/choosebranch")) {
             if ("messages" in data) {
                 data.messages.forEach((message) => {
                     if ("area" in message) {
                         currentAreaId = message.area.id;
 
-                        log(`We transitioned to ${currentAreaId}`);
+                        debug(`We transitioned to ${currentAreaId}`);
                     } else if ("setting" in message) {
                         currentSettingId = message.setting.id;
 
-                        log(`New setting: ${currentSettingId}`);
+                        debug(`New setting: ${currentSettingId}`);
                     }
                 })
             }
@@ -217,44 +217,36 @@
 
         if (response.currentTarget.responseURL.includes("/api/character/myself")) {
             currentSettingId = data.character.setting.id;
-            log(`Current setting ID: ${currentSettingId}`);
+            debug(`Current setting ID: ${currentSettingId}`);
 
             if (currentAreaId === UNKNOWN) {
                 debug(`Area is unknown, trying to detect via user info...`);
                 getAreaFromUserInfo()
                     .then(area => {
-                        log(`User is now at ${area.id}`);
+                        debug(`User is now at ${area.id}`);
                         currentAreaId = area.id;
                     });
             }
 
             const contraband = data.possessions.find(category => category.name === "Contraband");
-            if (contraband == null) {
-                return;
+            if (contraband != null) {
+                // TODO: Decrease Mirrorcatch Boxes count by 1
+                let mirrorBoxes = contraband.possessions.find(item => item.name === "Mirrorcatch Box");
+                if (mirrorBoxes) {
+                    mirrorBoxCount = mirrorBoxes.level;
+                }
+
+                if (apocyanBoxAcquired) {
+                    contraband.possessions.push(createApocyanicBox());
+                    setFakeXhrResponse(this, 200, JSON.stringify(data));
+                }
             }
-
-            // TODO: Decrease Mirrorcatch Boxes count by 1
-            let mirrorBoxes = contraband.possessions.find(item => item.name === "Mirrorcatch Box");
-            if (mirrorBoxes) {
-                mirrorBoxCount = mirrorBoxes.level;
-            }
-
-            if (!apocyanBoxAcquired) {
-                return;
-            }
-
-            contraband.possessions.push(createApocyanicBox());
-
-            setFakeXhrResponse(this, 200, JSON.stringify(data));
         }
 
         if (currentSettingId === TARGET_SETTING && currentAreaId === TARGET_AREA) {
             if (targetUrl.endsWith("/api/storylet") || targetUrl.endsWith("/api/storylet/goback")) {
                 if (data.phase === "Available") {
                     data.storylets.push(createEntryStorylet())
-
-                    // Object.defineProperty(this, 'responseText', {writable: true});
-                    // this.responseText = JSON.stringify(data);
                     setFakeXhrResponse(this, 200, JSON.stringify(data));
                 }
             }

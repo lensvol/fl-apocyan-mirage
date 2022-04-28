@@ -10,6 +10,9 @@
     let currentSettingId = UNKNOWN;
     let currentAreaId = UNKNOWN;
     let authToken = null;
+    let actionCount = 0;
+    let maxActions = 20;
+
     let apocyanBoxAcquired = localStorage.getItem(KEY_APOCYAN_ACQUIRED) === "yes";
     let mirrorBoxCount = 0;
 
@@ -69,7 +72,7 @@
         }
 
         return {
-            actions: 0,
+            actions: actionCount,
             canChangeOutfit: true,
             isSuccess: true,
             phase: "In",
@@ -173,6 +176,7 @@
         if (!((targetUrl.includes("/api/map")
             || targetUrl.includes("/storylet")
             || targetUrl.includes("/choosebranch")
+            || targetUrl.includes("/api/character/actions")
             || targetUrl.includes("/myself")))) {
             return;
         }
@@ -196,10 +200,17 @@
             }
         }
 
+        if (targetUrl.endsWith("/api/character/actions")) {
+            actionCount = data.actions;
+            maxActions = data.actionBankSize;
+        }
+
         if (targetUrl.endsWith("/api/map/move")) {
             currentAreaId = data["area"].id;
             debug(`We have moved to area ID ${currentAreaId}`);
-        } else if (targetUrl.endsWith("/api/storylet/choosebranch")) {
+        }
+
+        if (targetUrl.endsWith("/api/storylet/choosebranch")) {
             if ("messages" in data) {
                 data.messages.forEach((message) => {
                     if ("area" in message) {
@@ -243,8 +254,10 @@
             }
         }
 
-        if (currentSettingId === TARGET_SETTING && currentAreaId === TARGET_AREA) {
-            if (targetUrl.endsWith("/api/storylet") || targetUrl.endsWith("/api/storylet/goback")) {
+        if (targetUrl.endsWith("/api/storylet") || targetUrl.endsWith("/api/storylet/goback")) {
+            actionCount = data.actions;
+
+            if (currentSettingId === TARGET_SETTING && currentAreaId === TARGET_AREA) {
                 if (data.phase === "Available") {
                     data.storylets.push(createEntryStorylet())
                     setFakeXhrResponse(this, 200, JSON.stringify(data));
@@ -279,12 +292,12 @@
                     apocyanBoxAcquired = true;
 
                     const response = {
-                        actions: 0,
+                        actions: actionCount,
                         canChangeOutfit: true,
                         endStorylet: {
                             rootEventId: APOCYAN_POINT_STORYLET_ID,
                             premiumBenefitsApply: true,
-                            maxActionsAllowed: 20,
+                            maxActionsAllowed: maxActions,
                             isLinkingEvent: false,
                             event: {
                                 isInEventUseTree: false,
@@ -300,7 +313,7 @@
                             image: "apocyanic",
                             isDirectLinkingEvent: true,
                             canGoAgain: false,
-                            currentActionsRemaining: 20,
+                            currentActionsRemaining: actionCount,
                         },
                         isSuccess: true,
                         messages: [
@@ -319,7 +332,6 @@
                                 changeType: "Lost",
                                 image: "mirrorcatchboxclosed",
                                 isSidebar: false,
-                                // TODO: Update with the actual number of Mirrorcatch-boxes.
                                 message: `You've lost 1 x Mirrorcatch Box (new total ${mirrorBoxCount - 1})... Or not?`,
                                 priority: 2,
                                 tooltip: "The best way to store light, and certain other mysterious substances.",
